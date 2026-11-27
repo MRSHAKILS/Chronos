@@ -9,4 +9,6 @@ Demo: **Join as Daniel → "→ #1" → Pay $1.75**. Queue rearranges, Alice/Bob
 "Serve next" then "Complete & capture" shows the discounted final charge. "Reset demo" restores the seed.
 
 - `src/domain/` — pure pricing and exchange engine (integer cents, consent, delay caps, minimum charge, stale or expired quote rejection, exactly-once finalization). Tests: `npm test`.
-- Payments are a **labelled simulation**, so no real money moves. Stripe and Supabase are not wired up in this build.
+- Live: https://chronos-time-exchange.vercel.app (`/customer`, `/display` with QR join, `/merchant`).
+- Shared state syncs across devices through Upstash Redis (`KV_REST_API_URL`, `KV_REST_API_TOKEN`), using an atomic compare-and-set on each write. Without those env vars, the app falls back to in-memory state, which is only suitable for local dev.
+- Payments are a **labelled simulation**, so no real money moves. Stripe is not wired up yet.
