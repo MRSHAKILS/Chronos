@@ -6,7 +6,7 @@
 
 [![CHRONOS demo: Daniel pays $1.75 to move from #4 to #1](docs/demo/preview.gif)](docs/demo/chronos-demo.mp4)
 
-**[Watch the 65-second demo](docs/demo/chronos-demo.mp4)** (the café screen and a customer's phone side by side, with captions).
+**[Watch the 72-second demo with narration](docs/demo/chronos-demo.mp4)** (the café screen and a customer's phone side by side).
 
 ---
 
