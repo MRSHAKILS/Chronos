@@ -4,7 +4,9 @@
 
 **Live demo:** https://chronos-time-exchange.vercel.app · **Stack:** Next.js 16 · TypeScript · Tailwind CSS 4 · Motion · Zod · Stripe SDK · Upstash Redis · Vitest · Vercel
 
-![Live queue display](docs/screenshots/display.png)
+[![CHRONOS demo: Daniel pays $1.75 to move from #4 to #1](docs/demo/preview.gif)](docs/demo/chronos-demo.mp4)
+
+**[Watch the 65-second demo](docs/demo/chronos-demo.mp4)** (the café screen and a customer's phone side by side, with captions).
 
 ---
 
@@ -396,6 +398,8 @@ vercel integration add upstash/upstash-kv     # adds KV_* env vars
 vercel env add SESSION_SECRET production
 vercel deploy --prod
 ```
+
+The Vercel project is connected to this GitHub repository, so every push to `main` deploys to production and every other branch gets a preview URL.
 
 To enable the Stripe sandbox, add `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`. Then register `https://<your-domain>/api/stripe/webhook` for the `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded` and `checkout.session.async_payment_failed` events.
 
