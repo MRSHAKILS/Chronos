@@ -9,3 +9,7 @@ build
 next-env.d.ts
 .chronos-data
 .vercel
+
+.vercel
+.env*
+!.env.example

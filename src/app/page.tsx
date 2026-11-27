@@ -102,7 +102,29 @@ export default function Home() {
         </div>
       </section>
 
-      <p className="mt-16 font-mono text-[11px] text-obsidian/50">Demo only. Payments are simulated and no real money moves.</p>
+      <section className="mt-16">
+        <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-obsidian/70">Under the hood</p>
+        <div className="mt-4 grid gap-px border border-obsidian bg-obsidian md:grid-cols-2">
+          {[
+            ['Pure pricing engine', 'Integer cents only. Premium always equals compensation plus fee. Consent, delay caps and minimum charges are enforced before any money moves.'],
+            ['Atomic, retry-safe writes', 'Every change is a pure transition committed by compare-and-set in Redis. If two devices act at once, only one wins and the other re-validates.'],
+            ['Payment you can trust', 'Stripe sandbox Checkout with signature-verified, deduplicated webhooks. Abandoned checkouts are released, and late payments are refunded automatically.'],
+            ['Tested where it matters', '35 deterministic tests cover duplicate events, failed payments, concurrency, expiry and discounted capture.'],
+          ].map(([title, body]) => (
+            <div key={title} className="bg-ivory p-5">
+              <p className="font-display text-lg font-medium">{title}</p>
+              <p className="mt-1 text-sm text-obsidian/70">{body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <footer className="mt-16 flex flex-wrap items-center justify-between gap-3 border-t border-obsidian pt-4 font-mono text-[11px] text-obsidian/60">
+        <span>Demo only. No real money moves. The café console passcode is shown on its sign-in page.</span>
+        <a href="https://github.com/MRSHAKILS/Chronos" className="uppercase hover:text-signal">
+          Source on GitHub ↗
+        </a>
+      </footer>
     </main>
   )
 }
