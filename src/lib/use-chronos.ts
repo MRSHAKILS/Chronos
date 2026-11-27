@@ -1,124 +1,81 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { DEMO_PARTIES, demoVenueConfig, menuItem } from '@/domain/demo'
-import { finalizeExchange, releaseExchange, reserveExchange } from '@/domain/exchange'
-import { callNext, completeService, createVenueState, joinQueue, type Ids } from '@/domain/queue'
-import { issueQuote } from '@/domain/quote'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Quote, VenueState } from '@/domain/types'
 
-const KEY = 'chronos-demo-state'
-let counter = Date.now()
-const ids: Ids = { next: (p) => `${p}_${(++counter).toString(36)}` }
+type Action =
+  | { type: 'reset' }
+  | { type: 'joinDaniel' }
+  | { type: 'quote'; partyId: string; target: number }
+  | { type: 'pay'; quoteId: string; partyId: string }
+  | { type: 'serveNext' }
 
-export function seedState(): VenueState {
-  let s = createVenueState(demoVenueConfig(), Date.now())
-  for (const p of DEMO_PARTIES) {
-    const item = menuItem(p.sku)!
-    const r = joinQueue(
-      s,
-      {
-        partyId: p.displayName.toLowerCase(),
-        displayName: p.displayName,
-        orderItems: [{ sku: item.sku, name: item.name, cents: item.cents }],
-        serviceSec: item.serviceSec,
-        consent: p.consent,
-        payment: { kind: 'simulated', status: 'authorized', authorizedCents: item.cents },
-        tokenHash: null,
-        seeded: true,
-      },
-      Date.now(),
-    )
-    if (r.ok) s = r.value.state
-  }
-  return s
-}
-
-/** Demo state lives in localStorage and syncs across tabs (display / phone / merchant). */
+/**
+ * Shared venue state, held on the server. Every screen polls once a second,
+ * so a phone, the big display and the merchant console all see the same queue.
+ */
 export function useChronos() {
   const [state, setState] = useState<VenueState | null>(null)
+  const [store, setStore] = useState<'redis' | 'memory' | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
+
+  const refresh = useCallback(async () => {
+    if (busyRef.current) return
+    try {
+      const res = await fetch('/api/state', { cache: 'no-store' })
+      if (!res.ok) return
+      const body = (await res.json()) as { state: VenueState; store: 'redis' | 'memory' }
+      if (!busyRef.current) {
+        setState(body.state)
+        setStore(body.store)
+      }
+    } catch {
+      // Offline for a moment; the next poll retries.
+    }
+  }, [])
 
   useEffect(() => {
-    const raw = localStorage.getItem(KEY)
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setState(raw ? (JSON.parse(raw) as VenueState) : seedState())
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === KEY && e.newValue) setState(JSON.parse(e.newValue) as VenueState)
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [])
+    void refresh()
+    const t = setInterval(refresh, 1000)
+    return () => clearInterval(t)
+  }, [refresh])
 
-  const commit = useCallback((next: VenueState) => {
-    localStorage.setItem(KEY, JSON.stringify(next))
-    setState(next)
-  }, [])
-
-  const run = useCallback(
-    <T,>(fn: (s: VenueState) => { ok: true; value: { state: VenueState } & T } | { ok: false; error: { message: string } }) => {
-      if (!state) return null
-      const r = fn(state)
-      if (!r.ok) {
-        setMessage(r.error.message)
+  const send = useCallback(async (action: Action): Promise<Quote | null> => {
+    busyRef.current = true
+    setBusy(true)
+    try {
+      const res = await fetch('/api/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(action),
+      })
+      const body = (await res.json()) as { state?: VenueState; quote?: Quote | null; error?: string }
+      if (!res.ok) {
+        setMessage(body.error ?? 'Something went wrong')
         return null
       }
       setMessage(null)
-      commit(r.value.state)
-      return r.value
-    },
-    [state, commit],
-  )
+      if (body.state) setState(body.state)
+      return body.quote ?? null
+    } catch {
+      setMessage('Network error, please try again')
+      return null
+    } finally {
+      busyRef.current = false
+      setBusy(false)
+    }
+  }, [])
 
   const actions = {
-    reset: () => commit(seedState()),
-    joinDaniel: () => {
-      const item = menuItem('cold-brew')!
-      run((s) =>
-        joinQueue(
-          s,
-          {
-            partyId: 'daniel',
-            displayName: 'Daniel',
-            orderItems: [{ sku: item.sku, name: item.name, cents: item.cents }],
-            serviceSec: item.serviceSec,
-            consent: { optIn: false, minCompensationCents: 50, maxAdditionalDelaySec: 0 },
-            payment: { kind: 'simulated', status: 'authorized', authorizedCents: item.cents },
-            tokenHash: null,
-          },
-          Date.now(),
-        ),
-      )
-    },
-    quote: (partyId: string, target: number): Quote | null =>
-      run((s) => issueQuote(s, partyId, target, Date.now(), ids))?.quote ?? null,
-    /** Simulated checkout: reserve → pay → finalize, through the real engine. */
-    pay: (quote: Quote) => {
-      if (!state) return
-      const r = reserveExchange(state, { quoteId: quote.id, requesterId: quote.requesterId, provider: 'simulated' }, Date.now(), ids)
-      if (!r.ok) return setMessage(r.error.message)
-      const f = finalizeExchange(
-        r.value.state,
-        r.value.exchange.id,
-        { provider: 'simulated', amountCents: quote.totalCents, currency: 'usd', sessionId: `sim_${r.value.exchange.id}` },
-        Date.now(),
-        ids,
-      )
-      if (!f.ok) {
-        const rel = releaseExchange(r.value.state, r.value.exchange.id, 'payment_failed', Date.now())
-        if (rel.ok) commit(rel.value.state)
-        return setMessage(f.error.message)
-      }
-      setMessage(null)
-      commit(f.value.state)
-    },
-    serveNext: () => {
-      if (!state) return
-      const serving = state.queue.find((id) => state.parties[id]?.status === 'serving')
-      if (serving) run((s) => completeService(s, serving, Date.now()))
-      else run((s) => callNext(s, Date.now()))
-    },
+    reset: () => void send({ type: 'reset' }),
+    joinDaniel: () => void send({ type: 'joinDaniel' }),
+    quote: (partyId: string, target: number) => send({ type: 'quote', partyId, target }),
+    pay: (quote: Quote) => void send({ type: 'pay', quoteId: quote.id, partyId: quote.requesterId }),
+    serveNext: () => void send({ type: 'serveNext' }),
   }
 
-  return { state, message, actions }
+  return { state, store, message, busy, actions }
 }
