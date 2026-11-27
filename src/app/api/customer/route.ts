@@ -28,6 +28,7 @@ const body = z.discriminatedUnion('action', [
   z.object({ action: z.literal('cancel'), exchangeId: z.string().max(80) }),
   z.object({ action: z.literal('simulatedCheckout'), sessionId: z.string().max(80), outcome: z.enum(['paid', 'declined']) }),
   z.object({ action: z.literal('refreshAuthorization') }),
+  z.object({ action: z.literal('restart') }),
 ])
 
 /** Who am I? Resolves the caller's party from their httpOnly session cookie. */
@@ -49,6 +50,11 @@ export async function POST(request: Request) {
     if (!r.ok) return fail(r.error)
     await setPartyToken(r.value.token)
     return json({ partyId: r.value.partyId, authorizationUrl: r.value.authorizationUrl })
+  }
+
+  if (input.action === 'restart') {
+    await clearPartyToken()
+    return json({ ok: true })
   }
 
   const partyId = await currentPartyId(await chronos.load())

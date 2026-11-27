@@ -111,6 +111,9 @@ export function useCustomer(onChange: () => void) {
     simulatedCheckout: (sessionId: string, outcome: 'paid' | 'declined') =>
       call<{ status: string }>({ action: 'simulatedCheckout', sessionId, outcome }),
     refreshAuthorization: () => call({ action: 'refreshAuthorization' }),
+    restart: async () => {
+      if (await call({ action: 'restart' })) setPartyId(null)
+    },
   }
 }
 

@@ -213,4 +213,6 @@ export interface VenueState {
   processedEvents: string[]
   simulatedSessions: Record<string, SimulatedSession>
   seededAt: number
+  /** Last time any change was committed. Used to re-seed an idle public demo. */
+  lastActivityAt?: number
 }

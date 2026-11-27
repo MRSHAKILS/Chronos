@@ -29,13 +29,14 @@ CHRONOS is a consent-based time exchange for queues. Customers in a hurry buy a 
   - Duplicate Stripe events are deduplicated by event id.
   - Abandoned checkouts are expired, and their reservations released, only after the provider confirms they can no longer be paid.
   - A payment that lands after its reservation was released is refunded in full and recorded.
-- **Two payment adapters, one lifecycle.** The Stripe sandbox adapter uses Checkout for priority and manual capture for orders, and refuses live keys at startup. When no keys are set, an explicitly labelled simulation adapter runs the identical state machine.
+- **Two payment adapters, one lifecycle.** The live demo runs the simulation adapter. The Stripe sandbox adapter uses Checkout for priority and manual capture for orders, and refuses live keys at startup. When no keys are set, an explicitly labelled simulation adapter runs the identical state machine.
 - **Security.**
   - Customer sessions are random tokens in httpOnly cookies. Only their SHA-256 hash is stored.
   - The merchant console uses an HMAC-signed, expiring cookie.
   - All input is validated with Zod.
   - Public responses are stripped of private data.
   - Secrets never reach the browser.
+- **Self-healing public demo.** The venue re-seeds after 10 idle minutes (never while a payment is pending), and served customers can join again.
 - **Live everywhere.** Every screen polls the sanitised state each second, so a phone, the projector and the till stay in sync.
 
 ## Tech
@@ -47,7 +48,7 @@ src/domain/     pure engine: money, queue, quote, exchange, reconcile (no I/O)
 src/server/     store (Redis / memory CAS), payment adapters, lifecycle, auth, runtime wiring
 src/app/api/    state · customer · merchant · stripe/webhook route handlers
 src/components/ customer app, live queue, merchant console
-tests/          domain + lifecycle tests (35)
+tests/          domain + lifecycle tests (38)
 ```
 
 ## Run locally
@@ -55,7 +56,7 @@ tests/          domain + lifecycle tests (35)
 ```bash
 npm install
 npm run dev        # http://localhost:3000, in-memory store + simulated payments
-npm test           # 35 tests
+npm test           # 38 tests
 npm run lint && npm run typecheck && npm run build
 ```
 

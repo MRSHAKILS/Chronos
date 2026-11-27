@@ -108,8 +108,8 @@ export default function Home() {
           {[
             ['Pure pricing engine', 'Integer cents only. Premium always equals compensation plus fee. Consent, delay caps and minimum charges are enforced before any money moves.'],
             ['Atomic, retry-safe writes', 'Every change is a pure transition committed by compare-and-set in Redis. If two devices act at once, only one wins and the other re-validates.'],
-            ['Payment you can trust', 'Stripe sandbox Checkout with signature-verified, deduplicated webhooks. Abandoned checkouts are released, and late payments are refunded automatically.'],
-            ['Tested where it matters', '35 deterministic tests cover duplicate events, failed payments, concurrency, expiry and discounted capture.'],
+            ['Payment you can trust', 'One idempotent lifecycle for every payment: reserve, pay, then apply exactly once. Abandoned checkouts are released and late payments are refunded. A Stripe sandbox adapter is built in; this live demo runs the labelled simulation adapter.'],
+            ['Tested where it matters', '38 deterministic tests cover duplicate events, failed payments, concurrency, expiry and discounted capture.'],
           ].map(([title, body]) => (
             <div key={title} className="bg-ivory p-5">
               <p className="font-display text-lg font-medium">{title}</p>
@@ -120,7 +120,7 @@ export default function Home() {
       </section>
 
       <footer className="mt-16 flex flex-wrap items-center justify-between gap-3 border-t border-obsidian pt-4 font-mono text-[11px] text-obsidian/60">
-        <span>Demo only. No real money moves. The café console passcode is shown on its sign-in page.</span>
+        <span>Demo only. No real money moves. The queue resets itself after 10 idle minutes; the café console passcode is shown on its sign-in page.</span>
         <a href="https://github.com/MRSHAKILS/Chronos" className="uppercase hover:text-signal">
           Source on GitHub ↗
         </a>

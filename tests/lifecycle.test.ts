@@ -220,3 +220,33 @@ describe('service and capture', () => {
     expect(venueTotals(state).capturedCents).toBe(800 + 950)
   })
 })
+
+describe('public demo stays usable', () => {
+  it('a second visitor can still buy priority after the first exchange', async () => {
+    const { chronos } = setup()
+    const first = await danielBuysFirstPlace(chronos)
+    await chronos.resolveSimulated(first.purchase.sessionId, first.partyId, 'paid')
+    const erin = await chronos.join({ ...danielJoin, name: 'Erin', sku: 'espresso' }, ORIGIN)
+    if (!erin.ok) throw new Error(erin.error.message)
+    // Erin is #5 behind Charlie; passing Charlie, Bob and Alice is still within their delay limits.
+    const q = await chronos.quote(erin.value.partyId, 2)
+    expect(q.ok && q.value.affected.map((a) => a.displayName)).toEqual(['Alice', 'Bob', 'Charlie'])
+  })
+
+  it('re-seeds itself after 10 minutes without activity', async () => {
+    const { chronos, tick } = setup()
+    await chronos.join(danielJoin, ORIGIN)
+    expect((await chronos.load()).queue).toHaveLength(4)
+    tick(9 * 60 * 1000)
+    expect((await chronos.load()).queue).toHaveLength(4)
+    tick(2 * 60 * 1000)
+    expect((await chronos.load()).queue).toEqual(['alice', 'bob', 'charlie'])
+  })
+
+  it('does not re-seed while a payment is pending', async () => {
+    const { chronos, tick } = setup()
+    await danielBuysFirstPlace(chronos)
+    tick(11 * 60 * 1000)
+    expect((await chronos.load()).queue).toHaveLength(4)
+  })
+})

@@ -91,8 +91,9 @@ describe('priority quote', () => {
     const r = computeQuote(s, 'daniel', 1, T0, 'q')
     expect(!r.ok && r.error.code).toBe('delay_exceeded')
 
-    // Cumulative: after one confirmed displacement, Charlie (max 240s) cannot absorb a second 150s delay.
-    const { state, exchange, ids } = quoteAndReserve(demoState(), 3)
+    // Cumulative: after one confirmed displacement, Charlie (max 240s) cannot absorb a second delay.
+    const charlie240 = unwrap(updateConsent(demoState(), 'charlie', { optIn: true, minCompensationCents: 25, maxAdditionalDelaySec: 240 }, T0)).state
+    const { state, exchange, ids } = quoteAndReserve(charlie240, 3)
     const after = unwrap(finalizeExchange(state, exchange.id, evidence(50), T0 + 2000, ids)).state
     expect(after.parties.charlie!.addedDelaySec).toBe(150)
     expect(after.queue).toEqual(['alice', 'bob', 'daniel', 'charlie'])
@@ -176,7 +177,7 @@ describe('exchange reservation', () => {
 
   it('snapshots each affected customer’s consent into the exchange record', () => {
     const { exchange } = quoteAndReserve(demoState())
-    expect(exchange.quote.affected[1]!.consent).toMatchObject({ optIn: true, minCompensationCents: 75, maxAdditionalDelaySec: 360 })
+    expect(exchange.quote.affected[1]!.consent).toMatchObject({ optIn: true, minCompensationCents: 75, maxAdditionalDelaySec: 900 })
   })
 
   it('freezes consent changes, leaving and serving for reserved parties', () => {

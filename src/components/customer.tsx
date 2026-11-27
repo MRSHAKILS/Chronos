@@ -153,7 +153,7 @@ function ConsentFields({ value, onChange, disabled }: { value: JoinInput['consen
 function JoinForm({ state, mode, customer }: { state: VenueState; mode: Mode | null; customer: Customer }) {
   const [name, setName] = useState('Daniel')
   const [sku, setSku] = useState('cold-brew')
-  const [consent, setConsent] = useState<JoinInput['consent']>({ optIn: false, minCompensationCents: 50, maxAdditionalDelaySec: 300 })
+  const [consent, setConsent] = useState<JoinInput['consent']>({ optIn: true, minCompensationCents: 50, maxAdditionalDelaySec: 600 })
   const [payWithCard, setPayWithCard] = useState(false)
   const stripe = mode?.payments === 'stripe_sandbox'
 
@@ -279,7 +279,7 @@ function MyQueue({ state, me, now, mode, customer }: { state: VenueState; me: Pa
             </div>
           </div>
         ) : (
-          <Served me={me} />
+          <Served me={me} onRestart={customer.restart} />
         )}
 
         {pending && (
@@ -417,7 +417,7 @@ function paymentLabel(p: Party): string {
   }
 }
 
-function Served({ me }: { me: Party }) {
+function Served({ me, onRestart }: { me: Party; onRestart: () => void }) {
   return (
     <div className="space-y-2">
       <p className="flex items-center gap-2 font-display text-2xl">
@@ -429,6 +429,9 @@ function Served({ me }: { me: Party }) {
           {me.earnedDiscountCents > 0 && `, including ${formatCents(me.earnedDiscountCents)} you earned by letting others pass`}.
         </p>
       )}
+      <Button tone="solid" onClick={onRestart}>
+        <UserPlus size={14} /> Join again
+      </Button>
     </div>
   )
 }

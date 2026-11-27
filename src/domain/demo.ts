@@ -42,7 +42,7 @@ export interface DemoParty {
 
 /** Alice, Bob and Charlie: three consenting customers already waiting. */
 export const DEMO_PARTIES: DemoParty[] = [
-  { displayName: 'Alice', sku: 'flat-white', consent: { optIn: true, minCompensationCents: 50, maxAdditionalDelaySec: 300 } },
-  { displayName: 'Bob', sku: 'pour-over', consent: { optIn: true, minCompensationCents: 75, maxAdditionalDelaySec: 360 } },
-  { displayName: 'Charlie', sku: 'espresso', consent: { optIn: true, minCompensationCents: 25, maxAdditionalDelaySec: 240 } },
+  { displayName: 'Alice', sku: 'flat-white', consent: { optIn: true, minCompensationCents: 50, maxAdditionalDelaySec: 900 } },
+  { displayName: 'Bob', sku: 'pour-over', consent: { optIn: true, minCompensationCents: 75, maxAdditionalDelaySec: 900 } },
+  { displayName: 'Charlie', sku: 'espresso', consent: { optIn: true, minCompensationCents: 25, maxAdditionalDelaySec: 600 } },
 ]

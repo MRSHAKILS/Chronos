@@ -17,6 +17,8 @@ import { mutate, readOrSeed, type Store } from './store'
 import { seedState } from './seed'
 
 export const MAX_QUEUE = 12
+/** The public demo re-seeds itself after this long without any activity. */
+export const IDLE_RESEED_MS = 10 * 60 * 1000
 const CHECKOUT_CREATE_GRACE_MS = 2 * 60 * 1000
 
 export interface Deps {
@@ -49,8 +51,25 @@ export function createChronos(deps: Deps) {
   const { store, payments, venueId, now, ids } = deps
   const seed = () => seedState(now())
   const provider = payments.mode === 'stripe_sandbox' ? ('stripe' as const) : ('simulated' as const)
-  const run = <T>(fn: (s: VenueState) => Result<{ state: VenueState; value: T }>) => mutate(store, venueId, seed, fn)
-  const load = async () => (await readOrSeed(store, venueId, seed)).state
+  const run = <T>(fn: (s: VenueState) => Result<{ state: VenueState; value: T }>) =>
+    mutate(store, venueId, seed, (s) => {
+      const r = fn(s)
+      if (!r.ok || r.value.state === s) return r
+      return ok({ state: { ...r.value.state, lastActivityAt: now() }, value: r.value.value })
+    })
+
+  /** Loads the venue, re-seeding the public demo if it has been idle with nothing in flight. */
+  const load = async () => {
+    const { state } = await readOrSeed(store, venueId, seed)
+    const idleFor = now() - (state.lastActivityAt ?? state.seededAt)
+    const busy = Object.values(state.exchanges).some((e) => e.status === 'pending')
+    if (idleFor < IDLE_RESEED_MS || busy) return state
+    const r = await mutate(store, venueId, seed, (s) => {
+      const stillIdle = now() - (s.lastActivityAt ?? s.seededAt) >= IDLE_RESEED_MS
+      return stillIdle && !Object.values(s.exchanges).some((e) => e.status === 'pending') ? ok({ state: seed(), value: null }) : ok({ state: s, value: null })
+    })
+    return r.ok ? r.value.state : state
+  }
 
   async function join(
     input: { name: string; sku: string; consent: Consent; payWithCard: boolean },
