@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ivory: #F4F3ED;
+  --color-obsidian: #141414;
+  --color-signal: #FF5722;
+  --color-emerald: #16865C;
+  --color-rule: #141414;
+  --font-display: var(--font-space), system-ui, sans-serif;
+  --font-mono: var(--font-plex), ui-monospace, monospace;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+}
+
+body { background: var(--color-ivory); color: var(--color-obsidian); }
+.tabular { font-variant-numeric: tabular-nums; }
